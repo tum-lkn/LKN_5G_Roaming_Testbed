@@ -1,0 +1,79 @@
+# ============================================================================
+# Post-quantum IKEv2 evaluation testbed -- two strongSwan containers
+#
+#   pq-vplmn  = PC1, initiator  (default 192.168.40.55)
+#   pq-hplmn  = PC2, responder  (default 192.168.40.230)
+#
+# The container subnet 192.168.40.0/24 is deliberately different from the
+# VM lab network (10.162.149.0/24); IPs / subnet / strongSwan ref live in
+# ./.env, shared with ike_eval_docker.sh.
+#
+#   docker compose build            # compile strongSwan (one image, ~5-10 min)
+#   docker compose run --rm certs   # generate RSA + ML-DSA PKI into ./conf/
+#   docker compose up -d            # start both containers
+#   ./ike_eval_docker.sh 5 30       # run the evaluation
+# ============================================================================
+
+services:
+  vplmn:
+    build:
+      context: .
+      args:
+        SWAN_REF: ${SWAN_REF:-ml-dsa}
+    image: pq-ike-strongswan:local
+    container_name: pq-vplmn
+    init: true        # reap zombie charon processes (PID 1 must wait() children)
+    hostname: vplmn
+    cap_add:
+      - NET_ADMIN        # XFRM/IPsec via netlink + tc netem
+      - NET_RAW          # tcpdump
+    networks:
+      n9net:
+        ipv4_address: ${PC1_IP:-192.168.40.55}
+    volumes:
+      - ./conf/vplmn:/etc/swanctl
+      - ./results:/results
+    command: ["sleep", "infinity"]
+
+  hplmn:
+    image: pq-ike-strongswan:local
+    container_name: pq-hplmn
+    init: true
+    hostname: hplmn
+    depends_on:
+      - vplmn
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      n9net:
+        ipv4_address: ${PC2_IP:-192.168.40.230}
+    volumes:
+      - ./conf/hplmn:/etc/swanctl
+      - ./results:/results
+    command: ["sleep", "infinity"]
+
+  # one-shot PKI generator:   docker compose run --rm certs
+  certs:
+    image: pq-ike-strongswan:local
+    profiles: ["tools"]
+    network_mode: none
+    environment:
+      PC1_IP: ${PC1_IP:-192.168.40.55}
+      PC2_IP: ${PC2_IP:-192.168.40.230}
+      # Certificate identities. Must match PC1_ID/PC2_ID in ike_eval_docker.sh
+      # (which writes them into swanctl.conf) or IKE auth fails on an identity
+      # mismatch. Overridable here so changing a DN needs no image rebuild.
+      PC1_DN: "${PC1_DN:-C=3G, O=Open5GS, CN=upf.5gc.mnc071.mcc999.3gppnetwork.org}"
+      PC2_DN: "${PC2_DN:-C=3G, O=Open5GS, CN=upf.5gc.mnc001.mcc001.3gppnetwork.org}"
+    volumes:
+      - ./conf:/conf
+    command: ["gen-certs", "/conf"]
+
+networks:
+  n9net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${SUBNET:-192.168.40.0/24}
+          gateway: ${GW_IP:-192.168.40.1}

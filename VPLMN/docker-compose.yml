@@ -1,0 +1,531 @@
+version: '3.8'
+
+networks:
+  my_custom_network:
+    external: true
+
+  my_second_network:
+    external: true
+
+  my_isolated_network:  # Network for Open5gs-upf2
+    external: true
+
+services:
+
+  open5gs-mongodb:
+    image: open5gs-mongodb:v2.7.6-hr
+    container_name: open5gs-mongodb
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.198
+    restart: on-failure
+    volumes:
+      # These will overwrite the files inside the container at runtime
+      - ./docker/mongodb-docker/start_services.sh:/open5gs/start_services.sh
+      - ./docker/mongodb-docker/open5gs-dbctl.sh:/open5gs/open5gs-dbctl.sh
+
+  open5gs-nrf:
+    image: open5gs-nrf:v2.7.6-hr
+    container_name: open5gs-nrf
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.189
+    volumes:
+      # TLS certificates
+      - ./docker/nrf-docker/files/ca.crt:/etc/open5gs/default/tls/ca.crt:ro
+      - ./docker/nrf-docker/files/nrf.crt:/etc/open5gs/default/tls/nrf.crt:ro
+      - ./docker/nrf-docker/files/nrf.key:/etc/open5gs/default/tls/nrf.key:ro
+      # Configuration
+      - ./docker/nrf-docker/${NRF_CONFIG:-nrf_tls.yaml}:/etc/open5gs/default/nrf.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      - ./docker/nrf-docker/files/open5gs-nrfd:/usr/local/bin/open5gs-nrfd:ro
+
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    cap_add:
+      - NET_ADMIN
+
+  open5gs-scp:
+    image: open5gs-scp:v2.7.6-hr
+    container_name: open5gs-scp
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.188
+    volumes:
+      # TLS certificates
+      - ./docker/scp-docker/files/ca.crt:/etc/open5gs/default/tls/ca.crt:ro
+      - ./docker/scp-docker/files/scp.crt:/etc/open5gs/default/tls/scp.crt:ro
+      - ./docker/scp-docker/files/scp.key:/etc/open5gs/default/tls/scp.key:ro
+      # Configuration
+      - ./docker/scp-docker/${SCP_CONFIG:-scp_tls.yaml}:/etc/open5gs/default/scp.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      - ./docker/scp-docker/files/open5gs-scpd:/usr/local/bin/open5gs-scpd:ro
+    restart: unless-stopped
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+    depends_on:
+      - open5gs-nrf
+    stdin_open: true
+    tty: true
+    cap_add:
+      - NET_ADMIN
+
+  open5gs-amf:
+    image: open5gs-amf:v2.7.6-hr
+    container_name: open5gs-amf
+    # network_mode: host
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.185
+      my_second_network:
+        ipv4_address: 192.168.70.185
+    ports:
+      - "38412:38412/udp"
+      - "38412:38412/sctp"
+    volumes:
+      # TLS certificates
+      - ./docker/amf-docker/files/ca.crt:/etc/open5gs/default/tls/ca.crt:ro
+      - ./docker/amf-docker/files/amf.crt:/etc/open5gs/default/tls/amf.crt:ro
+      - ./docker/amf-docker/files/amf.key:/etc/open5gs/default/tls/amf.key:ro
+      # Configuration
+      - ./docker/amf-docker/${AMF_CONFIG:-amf_tls.yaml}:/etc/open5gs/default/amf.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      - ./docker/amf-docker/files/open5gs-amfd:/usr/local/bin/open5gs-amfd:ro
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    cap_add:
+      - NET_BIND_SERVICE
+      - NET_ADMIN
+    depends_on:
+      - open5gs-nrf
+      - open5gs-scp
+
+  open5gs-smf:
+    image: open5gs-smf:v2.7.6-hr
+    container_name: open5gs-smf
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.193
+    volumes:
+      # TLS certificates
+      - ./docker/smf-docker/files/ca.crt:/etc/open5gs/default/tls/ca.crt:ro
+      - ./docker/smf-docker/files/smf.crt:/etc/open5gs/default/tls/smf.crt:ro
+      - ./docker/smf-docker/files/smf.key:/etc/open5gs/default/tls/smf.key:ro
+      # Configuration
+      - ./docker/smf-docker/${SMF_CONFIG:-smf_tls.yaml}:/etc/open5gs/default/smf.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      - ./docker/smf-docker/files/open5gs-smfd:/usr/local/bin/open5gs-smfd:ro
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - open5gs-nrf
+      - open5gs-scp
+      - open5gs-amf
+
+  open5gs-upf:
+    image: ${UPF_IMAGE:-open5gs-upf:v2.7.6-hr}
+    container_name: open5gs-upf
+    network_mode: host
+    volumes:
+      # Configuration
+      - ./docker/upf-docker/${UPF_CONFIG:-upf_tls.yaml}:/etc/open5gs/default/upf.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      #- ./docker/upf-docker/files/open5gs-upfd:/usr/local/bin/open5gs-upfd:ro
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+    restart: unless-stopped
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - open5gs-nrf
+      - open5gs-scp
+      - open5gs-amf
+      - open5gs-smf
+
+  open5gs-ausf:
+    image: open5gs-ausf:v2.7.6-hr
+    container_name: open5gs-ausf
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.191
+    volumes:
+      # TLS certificates
+      - ./docker/ausf-docker/files/ca.crt:/etc/open5gs/default/tls/ca.crt:ro
+      - ./docker/ausf-docker/files/ausf.crt:/etc/open5gs/default/tls/ausf.crt:ro
+      - ./docker/ausf-docker/files/ausf.key:/etc/open5gs/default/tls/ausf.key:ro
+      # Configuration
+      - ./docker/ausf-docker/${AUSF_CONFIG:-ausf_tls.yaml}:/etc/open5gs/default/ausf.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      - ./docker/ausf-docker/files/open5gs-ausfd:/usr/local/bin/open5gs-ausfd:ro
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+    cap_add:
+      - NET_BIND_SERVICE
+      - NET_ADMIN
+
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    depends_on:
+      - open5gs-nrf
+      - open5gs-scp
+      - open5gs-amf
+      - open5gs-smf
+      - open5gs-upf
+
+  open5gs-udm:
+    image: open5gs-udm:v2.7.6-hr
+    container_name: open5gs-udm
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.192
+    volumes:
+      # TLS certificates
+      - ./docker/udm-docker/files/ca.crt:/etc/open5gs/default/tls/ca.crt:ro
+      - ./docker/udm-docker/files/udm.crt:/etc/open5gs/default/tls/udm.crt:ro
+      - ./docker/udm-docker/files/udm.key:/etc/open5gs/default/tls/udm.key:ro
+      # Configuration
+      - ./docker/udm-docker/${UDM_CONFIG:-udm_tls.yaml}:/etc/open5gs/default/udm.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      - ./docker/udm-docker/files/open5gs-udmd:/usr/local/bin/open5gs-udmd:ro
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - open5gs-nrf
+      - open5gs-scp
+      - open5gs-amf
+      - open5gs-smf
+      - open5gs-upf
+      - open5gs-ausf
+
+  open5gs-pcf:
+    image: open5gs-pcf:v2.7.6-hr
+    container_name: open5gs-pcf
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.194
+    volumes:
+      # TLS certificates
+      - ./docker/pcf-docker/files/ca.crt:/etc/open5gs/default/tls/ca.crt:ro
+      - ./docker/pcf-docker/files/pcf.crt:/etc/open5gs/default/tls/pcf.crt:ro
+      - ./docker/pcf-docker/files/pcf.key:/etc/open5gs/default/tls/pcf.key:ro
+      # Configuration
+      - ./docker/pcf-docker/${PCF_CONFIG:-pcf_tls.yaml}:/etc/open5gs/default/pcf.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      - ./docker/pcf-docker/files/open5gs-pcfd:/usr/local/bin/open5gs-pcfd:ro
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - open5gs-nrf
+      - open5gs-scp
+      - open5gs-amf
+      - open5gs-smf
+      - open5gs-upf
+      - open5gs-ausf
+      - open5gs-udm
+      - open5gs-mongodb
+
+  open5gs-nssf:
+    image: open5gs-nssf:v2.7.6-hr
+    container_name: open5gs-nssf
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.195
+    volumes:
+      # TLS certificates
+      - ./docker/nssf-docker/files/ca.crt:/etc/open5gs/default/tls/ca.crt:ro
+      - ./docker/nssf-docker/files/nssf.crt:/etc/open5gs/default/tls/nssf.crt:ro
+      - ./docker/nssf-docker/files/nssf.key:/etc/open5gs/default/tls/nssf.key:ro
+      # Configuration
+      - ./docker/nssf-docker/${NSSF_CONFIG:-nssf_tls.yaml}:/etc/open5gs/default/nssf.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      - ./docker/nssf-docker/files/open5gs-nssfd:/usr/local/bin/open5gs-nssfd:ro
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - open5gs-nrf
+      - open5gs-scp
+      - open5gs-amf
+      - open5gs-smf
+      - open5gs-upf
+      - open5gs-ausf
+      - open5gs-udm
+      - open5gs-mongodb
+      - open5gs-pcf
+
+  open5gs-bsf:
+    image: open5gs-bsf:v2.7.6-hr
+    container_name: open5gs-bsf
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.196
+    volumes:
+      # TLS certificates
+      - ./docker/bsf-docker/files/ca.crt:/etc/open5gs/default/tls/ca.crt:ro
+      - ./docker/bsf-docker/files/bsf.crt:/etc/open5gs/default/tls/bsf.crt:ro
+      - ./docker/bsf-docker/files/bsf.key:/etc/open5gs/default/tls/bsf.key:ro
+      # Configuration
+      - ./docker/bsf-docker/${BSF_CONFIG:-bsf_tls.yaml}:/etc/open5gs/default/bsf.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      - ./docker/bsf-docker/files/open5gs-bsfd:/usr/local/bin/open5gs-bsfd:ro
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - open5gs-nrf
+      - open5gs-scp
+      - open5gs-amf
+      - open5gs-smf
+      - open5gs-upf
+      - open5gs-ausf
+      - open5gs-udm
+      - open5gs-mongodb
+      - open5gs-pcf
+      - open5gs-nssf
+
+  open5gs-udr:
+    image: open5gs-udr:v2.7.6-hr
+    container_name: open5gs-udr
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.199
+    volumes:
+      # TLS certificates
+      - ./docker/udr-docker/files/ca.crt:/etc/open5gs/default/tls/ca.crt:ro
+      - ./docker/udr-docker/files/udr.crt:/etc/open5gs/default/tls/udr.crt:ro
+      - ./docker/udr-docker/files/udr.key:/etc/open5gs/default/tls/udr.key:ro
+      # Configuration
+      - ./docker/udr-docker/${UDR_CONFIG:-udr_tls.yaml}:/etc/open5gs/default/udr.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      - ./docker/udr-docker/files/open5gs-udrd:/usr/local/bin/open5gs-udrd:ro
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - open5gs-nrf
+      - open5gs-scp
+      - open5gs-amf
+      - open5gs-smf
+      - open5gs-upf
+      - open5gs-ausf
+      - open5gs-udm
+      - open5gs-mongodb
+      - open5gs-pcf
+      - open5gs-nssf
+      - open5gs-bsf
+
+  open5gs-sepp:
+    image: open5gs-sepp:v2.7.6-hr
+    container_name: open5gs-sepp
+    networks:
+      my_custom_network:
+        ipv4_address: 192.168.50.251
+    volumes:
+      # TLS certificates
+      - ./docker/sepp-docker/files/ca.crt:/etc/open5gs/default/tls/ca.crt:ro
+      - ./docker/sepp-docker/files/sepp.crt:/etc/open5gs/default/tls/sepp.crt:ro
+      - ./docker/sepp-docker/files/sepp.key:/etc/open5gs/default/tls/sepp.key:ro
+      # Configuration
+      - ./docker/sepp-docker/${SEPP_CONFIG:-sepp_tls.yaml}:/etc/open5gs/default/sepp.yaml:ro
+      # Binary file (allows updates without rebuilding image)
+      - ./docker/sepp-docker/files/open5gs-seppd:/usr/local/bin/open5gs-seppd:ro
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    extra_hosts:
+      - "nrf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.189"
+      - "scp.localdomain:192.168.50.188"
+      - "amf.localdomain:192.168.50.185"
+      - "smf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.193"
+      - "upf.localdomain:192.168.50.187"
+      - "ausf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.191"
+      - "udm.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.192"
+      - "pcf.localdomain:192.168.50.194"
+      - "nssf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.195"
+      - "bsf.5gc.mnc071.mcc999.3gppnetwork.org:192.168.50.196"
+      - "udr.localdomain:192.168.50.199"
+      - "sepp.localdomain:192.168.50.251"
+      - "sepp2.localdomain:10.162.149.24" # HPLMN_IP - Update this to your HPLMN PC IP
+
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - open5gs-nrf
+      - open5gs-scp
+      - open5gs-amf
+      - open5gs-smf
+      - open5gs-upf
+      - open5gs-ausf
+      - open5gs-udm
+      - open5gs-mongodb
+      - open5gs-pcf
+      - open5gs-nssf
+      - open5gs-bsf
+      - open5gs-udr

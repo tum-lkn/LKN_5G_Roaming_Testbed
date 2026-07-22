@@ -1,0 +1,120 @@
+#!/bin/bash
+# ==============================================================================
+# post-merge hook — runs automatically after every git pull
+#
+#   1. Re-applies machine-local IP addresses from the active testbed's .env into
+#      its config files, undoing any IPs the pull brought in from the remote.
+#   2. Detects when the pull changed the Open5GS binaries/libraries committed
+#      under <testbed>/<svc>-docker/files/ and flags (or rebuilds) the affected
+#      Docker images — otherwise the images keep their OLD libogs and you get
+#      runtime crashes like:
+#         symbol lookup error: ... undefined symbol: ogs_home_network_domain_from_fqdn
+#         *** stack smashing detected ***
+#      The images are NOT in git, so a pull alone never updates them.
+#
+# This repo holds two testbeds (HPLMN, VPLMN). A VM only runs the one whose
+# folder contains a .env file, so the hook acts ONLY on testbeds that have a
+# .env. Set OPEN5GS_AUTO_REBUILD=1 to rebuild affected images automatically
+# instead of just printing the command.
+# ==============================================================================
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT" || exit 0
+
+IMAGE_TAG="v2.7.6-hr"   # tag used by lib/setup/build_all.sh and docker-compose.yml
+
+# Active testbed = a directory that has its own .env (marks this VM's role).
+is_active_testbed() { [[ -f "$REPO_ROOT/$1/.env" ]]; }
+
+# ------------------------------------------------------------------------------
+# 0. Self-update: keep the installed hook in sync with the versioned one.
+#    A git pull updates the versioned file (<testbed>/lib/setup/post-merge.hook) but
+#    NEVER touches .git/hooks/, so without this the installed hook goes stale and
+#    keeps running old logic. If the pulled file differs from what is installed,
+#    copy it in and re-exec the fresh version so it takes effect immediately.
+#    (Migrating from a hook that lacks this block still needs one manual
+#     reinstall — an old hook cannot update itself to logic it doesn't have.)
+# ------------------------------------------------------------------------------
+installed_hook="$(git rev-parse --git-path hooks)/post-merge"
+[[ "$installed_hook" != /* ]] && installed_hook="$REPO_ROOT/$installed_hook"
+while IFS= read -r vh; do
+    [[ -n "$vh" ]] || continue
+    tb="${vh%/lib/setup/post-merge.hook}"
+    is_active_testbed "$tb" || continue          # only the active testbed's copy
+    versioned_hook="$REPO_ROOT/$vh"
+    if [[ -f "$versioned_hook" ]] && ! cmp -s "$versioned_hook" "$installed_hook"; then
+        if cp "$versioned_hook" "$installed_hook" && chmod +x "$installed_hook"; then
+            echo "[post-merge] Hook updated from $tb/lib/setup/post-merge.hook — re-running new version."
+            exec "$installed_hook" "$@"           # fresh interpreter reads the new file
+        else
+            echo "[post-merge] WARNING: could not update installed hook at $installed_hook"
+        fi
+    fi
+    break
+done < <(git ls-files '*/lib/setup/post-merge.hook' 2>/dev/null)
+
+# ------------------------------------------------------------------------------
+# 1. Re-apply machine-local IP configuration from the active testbed's .env
+# ------------------------------------------------------------------------------
+while IFS= read -r cfg; do
+    [[ -n "$cfg" ]] || continue
+    tb="${cfg%/lib/setup/configure_ip_from_env.sh}"     # testbed dir
+    is_active_testbed "$tb" || continue             # skip the other VM's testbed
+    echo "[post-merge] Re-applying local IP configuration for $tb ..."
+    ( cd "$REPO_ROOT/$tb" && bash lib/setup/configure_ip_from_env.sh <<< 'y' )
+done < <(git ls-files '*/lib/setup/configure_ip_from_env.sh' 2>/dev/null)
+echo "[post-merge] IP configuration done."
+
+# ------------------------------------------------------------------------------
+# 2. Detect changed Open5GS binaries/libraries and flag/rebuild affected images
+# ------------------------------------------------------------------------------
+# ORIG_HEAD = where HEAD was before this pull/merge. Compare it to the new HEAD.
+git rev-parse --verify -q ORIG_HEAD >/dev/null || exit 0
+
+# Changed '<testbed>/<svc>-docker' dirs whose daemon or library files changed,
+# restricted to the active testbed (the one with a .env on this VM).
+declare -A TB_TAGS
+while IFS= read -r d; do
+    [[ -n "$d" ]] || continue
+    tb="$(dirname "$d")"                            # e.g. VPLMN
+    is_active_testbed "$tb" || continue             # ignore the other VM's testbed
+    svc="$(basename "$d")"; svc="${svc%-docker}"
+    TB_TAGS["$tb"]+=" open5gs-${svc}:${IMAGE_TAG}"
+done < <(
+    git diff --name-only ORIG_HEAD HEAD 2>/dev/null \
+    | grep -E '/files/(open5gs-[a-z]+d|libog[a-z0-9-]*\.so)' \
+    | sed -E 's#(.*-docker)/files/.*#\1#' \
+    | sort -u
+)
+[[ ${#TB_TAGS[@]} -eq 0 ]] && exit 0   # nothing image-relevant changed for this VM
+
+echo ""
+echo "=============================================================================="
+echo "[post-merge] ⚠  This pull updated Open5GS binaries/libraries for this VM."
+echo ""
+echo "    Existing Docker images still hold the OLD libogs and will CRASH on"
+echo "    'docker compose up' (symbol-lookup / stack-smash) until rebuilt."
+echo "    build_all.sh SKIPS images that already exist, so they must be removed first."
+echo "=============================================================================="
+
+for tb in "${!TB_TAGS[@]}"; do
+    tags="${TB_TAGS[$tb]## }"
+    if [[ "${OPEN5GS_AUTO_REBUILD:-0}" == "1" ]]; then
+        echo "[post-merge] OPEN5GS_AUTO_REBUILD=1 → rebuilding for $tb ..."
+        sudo docker rmi -f $tags 2>/dev/null
+        ( cd "$REPO_ROOT/$tb" && bash lib/setup/build_all.sh )
+        echo "[post-merge] Rebuild finished for $tb."
+    else
+        echo ""
+        echo "  Affected images: $tags"
+        echo "  Run before starting:"
+        echo "      sudo docker rmi -f$tags"
+        echo "      ( cd $tb && bash lib/setup/build_all.sh )"
+    fi
+done
+[[ "${OPEN5GS_AUTO_REBUILD:-0}" == "1" ]] || {
+    echo ""
+    echo "  (Or set OPEN5GS_AUTO_REBUILD=1 before pulling to do this automatically.)"
+    echo ""
+}
+exit 0

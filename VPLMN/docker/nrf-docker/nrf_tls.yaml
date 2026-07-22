@@ -1,0 +1,31 @@
+logger:
+  file:
+    path: /var/log/open5gs/nrf.log
+
+global:
+  max:
+    ue: 1024
+
+
+
+nrf:
+  default:
+    tls:
+      server:
+        scheme: https
+        private_key: /etc/open5gs/default/tls/nrf.key
+        cert: /etc/open5gs/default/tls/nrf.crt
+        sslkeylogfile: /var/log/open5gs/tls/nrf-server-sslkeylog.log
+      client:
+        scheme: https
+        cacert: /etc/open5gs/default/tls/ca.crt
+        client_sslkeylogfile: /var/log/open5gs/tls/nrf-client-sslkeylog.log
+        
+  serving:
+    - plmn_id:
+        mcc: 999
+        mnc: 71
+
+  sbi:
+    server:
+      - address: nrf.5gc.mnc071.mcc999.3gppnetwork.org

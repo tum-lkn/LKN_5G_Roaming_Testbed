@@ -1,0 +1,22 @@
+#!/bin/bash
+# ============================================================================
+# swan-stop -- stop the charon IKE daemon and flush all IPsec kernel state.
+# Replaces `systemctl stop strongswan; ip xfrm state/policy flush` from the
+# original VM-based setup.
+# ============================================================================
+
+pkill -x charon 2>/dev/null
+
+# wait up to ~5 s for a clean shutdown (live processes only; a leftover
+# zombie entry would otherwise stall this loop), then force-kill
+for _ in $(seq 1 100); do
+    ps -o stat= -C charon 2>/dev/null | grep -qv '^Z' || break
+    sleep 0.05
+done
+pkill -9 -x charon 2>/dev/null
+
+ip xfrm state flush  2>/dev/null || true
+ip xfrm policy flush 2>/dev/null || true
+rm -f /var/run/charon.vici /var/run/charon.pid 2>/dev/null
+
+exit 0

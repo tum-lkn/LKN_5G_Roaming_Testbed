@@ -1,0 +1,71 @@
+db_uri: mongodb://open5gs-mongodb/open5gs
+
+logger:
+  file:
+    path: /var/log/open5gs/pcf.log
+
+global:
+  max:
+    ue: 1024
+
+pcf:
+
+  default:
+    tls:
+      server:
+        scheme: https
+        private_key: /etc/open5gs/default/tls/pcf.key
+        cert: /etc/open5gs/default/tls/pcf.crt
+        sslkeylogfile: /var/log/open5gs/tls/pcf-server-sslkeylog.log
+      client:
+        scheme: https
+        cacert: /etc/open5gs/default/tls/ca.crt
+        client_sslkeylogfile: /var/log/open5gs/tls/pcf-client-sslkeylog.log
+
+  sbi:
+    server:
+      - address: pcf.localdomain
+
+    client:
+      nrf:
+        - uri: https://nrf.5gc.mnc071.mcc999.3gppnetwork.org
+
+  metrics:
+    server:
+      - address: 192.168.50.194
+        port: 9090
+
+policy:
+  - plmn_id: { mcc: 001, mnc: 01 }
+    slice:
+      - sst: 1
+        default_indicator: true
+        session:
+          - name: internet
+            type: 3
+            ambr:
+              downlink: { value: 1, unit: 3 }
+              uplink: { value: 1, unit: 3 }
+            qos:
+              index: 9
+              arp:
+                priority_level: 8
+                pre_emption_vulnerability: 1
+                pre_emption_capability: 1
+
+  - plmn_id: { mcc: 315, mnc: 010 }
+    slice:
+      - sst: 1
+        default_indicator: true
+        session:
+          - name: internet
+            type: 3
+            ambr:
+              downlink: { value: 1, unit: 3 }
+              uplink: { value: 1, unit: 3 }
+            qos:
+              index: 9
+              arp:
+                priority_level: 8
+                pre_emption_vulnerability: 1
+                pre_emption_capability: 1

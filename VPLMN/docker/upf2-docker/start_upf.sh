@@ -1,0 +1,10 @@
+cp ~/open5gs/install/bin/open5gs-upfd files/open5gs-upfd
+cp ~/open5gs/install/lib/*/libogsproto.so.2 files/
+cp ~/open5gs/install/lib/*/libogscore.so.2 files/
+cp ~/open5gs/install/lib/*/libogsapp.so.2 files/
+cp ~/open5gs/install/lib/*/libogspfcp.so.2 files/
+cp ~/open5gs/install/lib/*/libogsgtp.so.2 files/
+cp ~/open5gs/install/lib/*/libogstun.so.2 files/
+cp ~/open5gs/install/lib/*/libogsipfw.so.2 files/
+cp ~/open5gs/install/lib/*/libogsmetrics.so.2 files/
+cp ~/open5gs/install/lib/*/libprom.so files/

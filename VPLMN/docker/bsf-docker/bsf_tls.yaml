@@ -1,0 +1,29 @@
+logger:
+  file:
+    path: /var/log/open5gs/bsf.log
+
+global:
+  max:
+    ue: 1024
+
+bsf:
+
+  default:
+    tls:
+      server:
+        scheme: https
+        private_key: /etc/open5gs/default/tls/bsf.key
+        cert: /etc/open5gs/default/tls/bsf.crt
+        sslkeylogfile: /var/log/open5gs/tls/bsf-server-sslkeylog.log
+      client:
+        scheme: https
+        cacert: /etc/open5gs/default/tls/ca.crt
+        client_sslkeylogfile: /var/log/open5gs/tls/bsf-client-sslkeylog.log
+
+  sbi:
+    server:
+      - address: bsf.5gc.mnc071.mcc999.3gppnetwork.org
+
+    client:
+      nrf:
+        - uri: https://nrf.5gc.mnc071.mcc999.3gppnetwork.org

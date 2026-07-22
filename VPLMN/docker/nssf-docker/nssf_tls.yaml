@@ -1,0 +1,34 @@
+logger:
+  file:
+    path: /var/log/open5gs/nssf.log
+
+global:
+  max:
+    ue: 1024
+
+nssf:
+
+  default:
+    tls:
+      server:
+        scheme: https
+        private_key: /etc/open5gs/default/tls/nssf.key
+        cert: /etc/open5gs/default/tls/nssf.crt
+        sslkeylogfile: /var/log/open5gs/tls/nssf-server-sslkeylog.log
+      client:
+        scheme: https
+        cacert: /etc/open5gs/default/tls/ca.crt
+        client_sslkeylogfile: /var/log/open5gs/tls/nssf-client-sslkeylog.log
+
+  sbi:
+    server:
+      - address: nssf.5gc.mnc071.mcc999.3gppnetwork.org
+
+    client:
+      nrf:
+        - uri: https://nrf.5gc.mnc071.mcc999.3gppnetwork.org
+ 
+      nsi:
+        - uri: https://nrf.5gc.mnc071.mcc999.3gppnetwork.org
+          s_nssai:
+            sst: 1

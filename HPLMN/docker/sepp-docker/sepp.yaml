@@ -1,0 +1,32 @@
+logger:
+    file:
+      path: var/log/open5gs/sepp.log
+    level: info   # fatal|error|warn|info(default)|debug|trace
+
+global:
+  max:
+    ue: 1024  # The number of UE can be increased depending on memory size.
+#
+
+sepp:
+    sbi:
+      server:
+        - address: 192.168.60.251
+          port: 8082
+      client:
+        scp:
+          - uri: http://192.168.60.188:7777 # Core 1
+    n32:
+      server:
+        - sender: sepp2.localdomain
+          address: 0.0.0.0
+          port: 8080
+          n32f:
+            address: 0.0.0.0
+            port: 8081
+      client:
+        sepp:
+          - receiver: sepp1.localdomain
+            uri: http://10.162.149.192:8080  # VPLMN_IP - Update this to your VPLMN PC IP
+            n32f:
+              uri: http://10.162.149.192:8081 # VPLMN_IP - Update this to your VPLMN PC IP

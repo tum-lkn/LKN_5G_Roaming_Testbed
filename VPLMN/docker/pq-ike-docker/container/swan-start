@@ -1,0 +1,40 @@
+#!/bin/bash
+# ============================================================================
+# swan-start -- start the charon IKE daemon (if not already running) and
+#               load the swanctl configuration & credentials.
+# Replaces `systemctl start strongswan && swanctl --load-all` from the
+# original VM-based setup.
+# ============================================================================
+
+CHARON="${CHARON:-/usr/libexec/ipsec/charon}"
+VICI="${VICI:-/var/run/charon.vici}"
+
+# A LIVE charon (zombies don't count — without an init, a killed charon
+# lingers as a zombie and would otherwise make us skip the start).
+charon_alive() {
+    ps -o stat= -C charon 2>/dev/null | grep -qv '^Z'
+}
+
+if ! charon_alive; then
+    "$CHARON" &
+fi
+
+# wait for the vici control socket (max ~10 s)
+for _ in $(seq 1 200); do
+    [ -S "$VICI" ] && break
+    sleep 0.05
+done
+
+if [ ! -S "$VICI" ]; then
+    echo "swan-start: charon did not come up (no vici socket at $VICI)" >&2
+    exit 1
+fi
+
+out=$(swanctl --load-all --noprompt 2>&1)
+rc=$?
+if [ $rc -ne 0 ]; then
+    echo "swan-start: swanctl --load-all failed:" >&2
+    echo "$out" >&2
+    exit $rc
+fi
+exit 0

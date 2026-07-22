@@ -1,0 +1,52 @@
+#!/bin/bash
+# ============================================================================
+# swan-run-initiator [timeout_s]
+#
+# Starts charon, loads the swanctl config (start_action = start triggers the
+# IKE handshake) and polls until the CHILD_SA is INSTALLED or the timeout
+# expires.
+#
+# Prints:  "<wall_clock_ms>:<success|timeout>"
+#
+# This mirrors the original wall-clock measurement
+# (`systemctl start` -> first INSTALLED) and runs entirely INSIDE the
+# container so that `docker exec` round-trip latency does not pollute the
+# measurement.
+# ============================================================================
+
+TIMEOUT_S="${1:-60}"
+CHARON="${CHARON:-/usr/libexec/ipsec/charon}"
+VICI="${VICI:-/var/run/charon.vici}"
+
+start_ns=$(date +%s%N)
+
+"$CHARON" &
+
+# wait for the vici control socket (max ~5 s)
+for _ in $(seq 1 250); do
+    [ -S "$VICI" ] && break
+    sleep 0.02
+done
+
+# loading the config triggers initiation (start_action = start)
+swanctl --load-all --noprompt >/dev/null 2>&1
+
+timeout_ns=$(( TIMEOUT_S * 1000000000 ))
+status="timeout"
+wall_ms=""
+
+while :; do
+    now_ns=$(date +%s%N)
+    elapsed_ns=$(( now_ns - start_ns ))
+    [ "$elapsed_ns" -ge "$timeout_ns" ] && break
+
+    if swanctl --list-sas 2>/dev/null | grep -q "INSTALLED"; then
+        wall_ms=$(( elapsed_ns / 1000000 ))
+        status="success"
+        break
+    fi
+    sleep 0.05
+done
+
+echo "${wall_ms}:${status}"
+exit 0

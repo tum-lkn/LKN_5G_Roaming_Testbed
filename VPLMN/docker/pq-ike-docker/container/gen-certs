@@ -1,0 +1,107 @@
+#!/bin/bash
+# ============================================================================
+# gen-certs [output_dir]
+#
+# Generates the complete PKI for both containers using strongSwan's `pki`:
+#
+#   * RSA Root CA      + RSA end-entity certs        (classical auth)
+#   * ML-DSA-65 Root CA + ML-DSA-65 end-entity certs (post-quantum auth,
+#     only if this strongSwan build supports ML-DSA)
+#
+# Output layout (default OUT=/conf, bind-mounted from ./conf on the host):
+#
+#   $OUT/vplmn/x509/pc1-upf-cert.pem        $OUT/hplmn/x509/pc2-upf-cert.pem
+#   $OUT/vplmn/x509/pq-pc1-upf-cert.pem     $OUT/hplmn/x509/pq-pc2-upf-cert.pem
+#   $OUT/vplmn/private/...                  $OUT/hplmn/private/...
+#   $OUT/{vplmn,hplmn}/x509ca/{rsa,mldsa}-ca.cert.pem
+#
+# File names and subject DNs match what ike_eval_docker.sh expects
+# (identical to the original VM testbed).
+#
+# Usage:   docker compose run --rm certs
+# ============================================================================
+set -euo pipefail
+
+OUT="${1:-/conf}"
+
+PC1_IP="${PC1_IP:-192.168.40.55}"
+PC2_IP="${PC2_IP:-192.168.40.230}"
+PC1_DN="${PC1_DN:-C=3G, O=Open5GS, CN=upf.5gc.mnc071.mcc999.3gppnetwork.org}"
+PC2_DN="${PC2_DN:-C=3G, O=Open5GS, CN=upf.5gc.mnc001.mcc001.3gppnetwork.org}"
+
+RSA_BITS="${RSA_BITS:-2048}"        # classical end-entity key size
+CA_LIFETIME="${CA_LIFETIME:-3652}"  # days
+EE_LIFETIME="${EE_LIFETIME:-1461}"  # days
+
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
+
+for side in vplmn hplmn; do
+    mkdir -p "$OUT/$side"/{x509,x509ca,x509aa,x509ac,x509crl,x509ocsp,pubkey,private,rsa,ecdsa,pkcs8,pkcs12}
+    [ -f "$OUT/$side/swanctl.conf" ] || \
+        echo "# placeholder - overwritten per scenario by ike_eval_docker.sh" \
+            > "$OUT/$side/swanctl.conf"
+done
+
+echo "==> RSA Root CA (RSA-3072)"
+pki --gen --type rsa --size 3072 --outform pem > "$TMP/rsa-ca.key.pem"
+pki --self --ca --lifetime "$CA_LIFETIME" \
+    --type priv --in "$TMP/rsa-ca.key.pem" \
+    --dn "C=3G, O=Open5GS, CN=Open5GS RSA Root CA" \
+    --outform pem > "$TMP/rsa-ca.cert.pem"
+
+issue_rsa() {   # $1=side  $2=pcN  $3=DN  $4=IP
+    local side=$1 pc=$2 dn=$3 ip=$4
+    pki --gen --type rsa --size "$RSA_BITS" --outform pem \
+        > "$OUT/$side/private/${pc}-upf-key.pem"
+    pki --issue --lifetime "$EE_LIFETIME" \
+        --cacert "$TMP/rsa-ca.cert.pem" --cakey "$TMP/rsa-ca.key.pem" \
+        --type priv --in "$OUT/$side/private/${pc}-upf-key.pem" \
+        --dn "$dn" --san "$ip" --flag serverAuth \
+        --outform pem > "$OUT/$side/x509/${pc}-upf-cert.pem"
+    echo "    $side: x509/${pc}-upf-cert.pem  (RSA-$RSA_BITS, CN from original setup)"
+}
+issue_rsa vplmn pc1 "$PC1_DN" "$PC1_IP"
+issue_rsa hplmn pc2 "$PC2_DN" "$PC2_IP"
+
+HAVE_MLDSA=0
+if pki --gen --type mldsa65 > "$TMP/probe.der" 2>/dev/null; then
+    HAVE_MLDSA=1
+    echo "==> ML-DSA-65 Root CA (post-quantum)"
+    pki --gen --type mldsa65 --outform pem > "$TMP/mldsa-ca.key.pem"
+    pki --self --ca --lifetime "$CA_LIFETIME" \
+        --type priv --in "$TMP/mldsa-ca.key.pem" \
+        --dn "C=3G, O=Open5GS, CN=Open5GS ML-DSA Root CA" \
+        --outform pem > "$TMP/mldsa-ca.cert.pem"
+
+    issue_mldsa() {   # $1=side  $2=pcN  $3=DN  $4=IP
+        local side=$1 pc=$2 dn=$3 ip=$4
+        pki --gen --type mldsa65 --outform pem \
+            > "$OUT/$side/private/pq-${pc}-upf-key.pem"
+        pki --issue --lifetime "$EE_LIFETIME" \
+            --cacert "$TMP/mldsa-ca.cert.pem" --cakey "$TMP/mldsa-ca.key.pem" \
+            --type priv --in "$OUT/$side/private/pq-${pc}-upf-key.pem" \
+            --dn "$dn" --san "$ip" --flag serverAuth \
+            --outform pem > "$OUT/$side/x509/pq-${pc}-upf-cert.pem"
+        echo "    $side: x509/pq-${pc}-upf-cert.pem  (ML-DSA-65)"
+    }
+    issue_mldsa vplmn pc1 "$PC1_DN" "$PC1_IP"
+    issue_mldsa hplmn pc2 "$PC2_DN" "$PC2_IP"
+else
+    echo "!!  This strongSwan build has no ML-DSA support"
+    echo "!!  (pki --gen --type mldsa65 failed)."
+    echo "!!  Scenarios 3 and 4 (PQ authentication) will not be runnable."
+    echo "!!  Rebuild with SWAN_REF=ml-dsa to enable them."
+fi
+
+# both CA certificates are trusted on both sides
+for side in vplmn hplmn; do
+    cp "$TMP/rsa-ca.cert.pem" "$OUT/$side/x509ca/rsa-ca.cert.pem"
+    if [ "$HAVE_MLDSA" -eq 1 ]; then
+        cp "$TMP/mldsa-ca.cert.pem" "$OUT/$side/x509ca/mldsa-ca.cert.pem"
+    fi
+done
+
+echo ""
+echo "Done. PKI written to $OUT/{vplmn,hplmn}/."
+echo "CA private keys were discarded on purpose; re-run gen-certs to re-issue."
