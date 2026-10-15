@@ -279,7 +279,7 @@ If you use this testbed in your research, please cite the project repository.
 
 Parts of this testbed were first presented as a demo at ACM WiSec '26:
 ```
-@inproceedings{zeidler_demo_2026,
+@inproceedings{WiSec_demo_2026,
 	address = {New York, NY, USA},
 	series = {{WiSec} '26},
 	title = {{DEMO: 5G SA Roaming Testbed for Post Quantum IPsec Security Evaluations}},
@@ -289,6 +289,28 @@ Parts of this testbed were first presented as a demo at ACM WiSec '26:
 	publisher = {Association for Computing Machinery},
 	author = {Zeidler, Oliver and Günes, Mert and Anirudh M., Sai and Kellerer, Wolfgang},
 	month = june,
+	year = {2026},
+}
+
+@inproceedings{CCS_demo_2026,
+	address = {New York, NY, USA},
+	series = {{CCS} '26},
+	title = {{DEMO: 5G SA Roaming Testbed for Security Evaluations}},
+	url = {https://dl.acm.org/doi/10.1145/3830454.3846406},
+	doi = {10.1145/3830454.3846406},
+	booktitle = {Proceedings of the 2026 ACM SIGSAC Conference on Computer and Communications Security},
+	publisher = {Association for Computing Machinery},
+	author = {Zeidler, Oliver and Azzouzi, Wassim and Günes, Mert and Haider, Valentin Thomas and Kellerer, Wolfgang},
+	month = nov,
+	year = {2026},
+}
+
+@inproceedings{MSWiM_Paper_2026,
+	series = {{MSWiM} '26},
+    title = {{5G SA Roaming Performance: Empirical Evaluation of LBO, HR, and Distributed UPF Architectures}},
+    author = {Zeidler, Oliver and Gunes, Mert and Fraunholz, Daniel and Kellerer, Wolfgang},
+    booktitle = {Proceedings of the 2026 International Conference on Modeling, Analysis and Simulation of Wireless and Mobile Systems (MSWiM)},
+	month = oct,
 	year = {2026},
 }
 ```
