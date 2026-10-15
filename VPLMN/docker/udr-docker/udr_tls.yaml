@@ -1,0 +1,34 @@
+db_uri: mongodb://open5gs-mongodb/open5gs
+
+logger:
+  file:
+    path: /var/log/open5gs/udr.log
+
+global:
+  max:
+    ue: 1024
+
+udr:
+
+  default:
+    tls:
+      server:
+        scheme: https
+        private_key: /etc/open5gs/default/tls/udr.key
+        cert: /etc/open5gs/default/tls/udr.crt
+        sslkeylogfile: /var/log/open5gs/tls/udr-server-sslkeylog.log
+      client:
+        scheme: https
+        cacert: /etc/open5gs/default/tls/ca.crt
+        client_sslkeylogfile: /var/log/open5gs/tls/udr-client-sslkeylog.log
+
+
+
+  sbi:
+    server:
+      - address: udr.localdomain
+
+    client:
+      nrf:
+        - uri: https://nrf.5gc.mnc071.mcc999.3gppnetwork.org
+

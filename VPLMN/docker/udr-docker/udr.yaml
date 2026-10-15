@@ -1,0 +1,21 @@
+db_uri: mongodb://open5gs-mongodb/open5gs
+logger:
+  file:
+    path: var/log/open5gs/udr.log
+#  level: info   # fatal|error|warn|info(default)|debug|trace
+
+global:
+  max:
+    ue: 1024  # The number of UE can be increased depending on memory size.
+#    peer: 64
+
+udr:
+  sbi:
+    server:
+      - address: 192.168.50.199
+        port: 7777
+    client:
+#      nrf:
+#        - uri: http://127.0.0.10:7777
+      scp:
+        - uri: http://192.168.50.188:7777

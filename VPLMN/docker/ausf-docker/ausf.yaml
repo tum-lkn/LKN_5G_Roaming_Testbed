@@ -1,0 +1,19 @@
+logger:
+  file:
+    path: var/log/open5gs/ausf.log
+#  level: info   # fatal|error|warn|info(default)|debug|trace
+
+global:
+  max:
+    ue: 1024  # The number of UE can be increased depending on memory size.
+#    peer: 64
+
+ausf:
+  sbi:
+    server:
+      - address: ausf.5gc.mnc071.mcc999.3gppnetwork.org
+    client:
+#      nrf:
+#        - uri: http://127.0.0.10:7777
+      scp:
+        - uri: http://192.168.50.188:7777 # Host name and related port of Core 1

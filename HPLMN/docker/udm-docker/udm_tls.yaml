@@ -1,0 +1,32 @@
+logger:
+  file:
+    path: var/log/open5gs/udm.log
+#  level: info   # fatal|error|warn|info(default)|debug|trace
+
+global:
+  max:
+    ue: 1024  # The number of UE can be increased depending on memory size.
+#    peer: 64
+
+
+udm:
+
+  default:
+    tls:
+      server:
+        scheme: https
+        private_key: /etc/open5gs/default/tls/udm.key
+        cert: /etc/open5gs/default/tls/udm.crt
+        sslkeylogfile: /var/log/open5gs/tls/udm-server-sslkeylog.log
+      client:
+        scheme: https
+        cacert: /etc/open5gs/default/tls/ca.crt
+        client_sslkeylogfile: /var/log/open5gs/tls/udm-client-sslkeylog.log
+
+  sbi:
+    server:
+      - address: udm.5gc.mnc001.mcc001.3gppnetwork.org
+
+    client:
+      nrf:
+        - uri: https://nrf.5gc.mnc001.mcc001.3gppnetwork.org

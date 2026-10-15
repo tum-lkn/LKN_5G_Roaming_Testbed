@@ -1,0 +1,7 @@
+# Repo-wide ignores. Each testbed (VPLMN / HPLMN) also carries its own
+# .gitignore so it stays self-contained when deployed alone.
+
+# Backup and log files — never commit, anywhere in the tree
+*.bak
+*.bak.*
+*.log

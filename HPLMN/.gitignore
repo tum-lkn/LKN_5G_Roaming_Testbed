@@ -1,0 +1,12 @@
+# Backup and log files — never commit, anywhere in this testbed
+*.bak
+*.bak.*
+*.log
+
+# Ignore build artifacts
+setup_logs/
+
+
+# Machine-local environment — contains real IPs, never commit
+# Copy lib/setup/.env.template to .env and fill in your IPs
+.env

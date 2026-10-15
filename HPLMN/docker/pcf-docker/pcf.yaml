@@ -1,0 +1,72 @@
+db_uri: mongodb://open5gs-mongodb/open5gs
+logger:
+  file:
+    path: var/log/open5gs/pcf.log
+#  level: info   # fatal|error|warn|info(default)|debug|trace
+
+global:
+  max:
+    ue: 1024  # The number of UE can be increased depending on memory size.
+#    peer: 64
+
+pcf:
+  sbi:
+    server:
+      - address: 192.168.60.194
+        port: 7777
+    client:
+#      nrf:
+#        - uri: http://127.0.0.10:7777
+      scp:
+        - uri: http://192.168.60.188:7777
+  metrics:
+    server:
+      - address: 192.168.60.194
+        port: 9090
+
+policy:
+  - plmn_id:
+      mcc: 999
+      mnc: 71
+    slice:
+      - sst: 1  # 1,2,3,4
+        default_indicator: true
+        session:
+          - name: internet
+            type: 3  # 1:IPv4, 2:IPv6, 3:IPv4v6
+            ambr:
+              downlink:
+                value: 1
+                unit: 3  # 0:bps, 1:Kbps, 2:Mbps, 3:Gbps, 4:Tbps
+              uplink:
+                value: 1
+                unit: 3
+            qos:
+              index: 9  # 1, 2, 3, 4, 65, 66, 67, 75, 71, 72, 73, 74, 76, 5, 6, 7, 8, 9, 69, 70, 79, 80, 82, 83, 84, 85, 86
+              arp:
+                priority_level: 8  # 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+                pre_emption_vulnerability: 1  # 1: Disabled, 2:Enabled
+                pre_emption_capability: 1  # 1: Disabled, 2:Enabled
+
+  - plmn_id:
+      mcc: 315
+      mnc: 010
+    slice:
+      - sst: 1  # 1,2,3,4
+        default_indicator: true
+        session:
+          - name: internet
+            type: 3  # 1:IPv4, 2:IPv6, 3:IPv4v6
+            ambr:
+              downlink:
+                value: 1
+                unit: 3  # 0:bps, 1:Kbps, 2:Mbps, 3:Gbps, 4:Tbps
+              uplink:
+                value: 1
+                unit: 3
+            qos:
+              index: 9  # 1, 2, 3, 4, 65, 66, 67, 75, 71, 72, 73, 74, 76, 5, 6, 7, 8, 9, 69, 70, 79, 80, 82, 83, 84, 85, 86
+              arp:
+                priority_level: 8  # 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+                pre_emption_vulnerability: 1  # 1: Disabled, 2:Enabled
+                pre_emption_capability: 1  # 1: Disabled, 2:Enabled

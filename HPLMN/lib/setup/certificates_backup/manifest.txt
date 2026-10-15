@@ -1,0 +1,51 @@
+Certificate Collection Manifest
+================================
+Collection Date: Mon Sep 21 05:33:44 PM UTC 2026
+Collection Path: /home/roaming/LKN_5G_Roaming_Testbed/HPLMN
+
+Collected NFs: 11
+Failed NFs: 0
+
+Directory Structure:
+./lib/setup/certificates_backup/scp-docker/scp.crt
+./lib/setup/certificates_backup/scp-docker/ca.crt
+./lib/setup/certificates_backup/scp-docker/scp.key
+./lib/setup/certificates_backup/scp-docker/ca.key
+./lib/setup/certificates_backup/pcf-docker/pcf.key
+./lib/setup/certificates_backup/pcf-docker/ca.crt
+./lib/setup/certificates_backup/pcf-docker/pcf.crt
+./lib/setup/certificates_backup/sepp-docker/sepp.crt
+./lib/setup/certificates_backup/sepp-docker/sepp.key
+./lib/setup/certificates_backup/sepp-docker/ca.crt
+./lib/setup/certificates_backup/sepp-docker/ca.key
+./lib/setup/certificates_backup/udm-docker/ca.crt
+./lib/setup/certificates_backup/udm-docker/udm.crt
+./lib/setup/certificates_backup/udm-docker/ca.key
+./lib/setup/certificates_backup/udm-docker/udm.key
+./lib/setup/certificates_backup/ausf-docker/ausf.key
+./lib/setup/certificates_backup/ausf-docker/ausf.crt
+./lib/setup/certificates_backup/ausf-docker/ca.crt
+./lib/setup/certificates_backup/ausf-docker/ca.key
+./lib/setup/certificates_backup/nssf-docker/nssf.key
+./lib/setup/certificates_backup/nssf-docker/ca.crt
+./lib/setup/certificates_backup/nssf-docker/ca.key
+./lib/setup/certificates_backup/nssf-docker/nssf.crt
+./lib/setup/certificates_backup/udr-docker/udr.key
+./lib/setup/certificates_backup/udr-docker/ca.crt
+./lib/setup/certificates_backup/udr-docker/udr.crt
+./lib/setup/certificates_backup/smf-docker/smf.crt
+./lib/setup/certificates_backup/smf-docker/ca.crt
+./lib/setup/certificates_backup/smf-docker/ca.key
+./lib/setup/certificates_backup/smf-docker/smf.key
+./lib/setup/certificates_backup/manifest.txt
+./lib/setup/certificates_backup/bsf-docker/ca.crt
+./lib/setup/certificates_backup/bsf-docker/bsf.key
+./lib/setup/certificates_backup/bsf-docker/ca.key
+./lib/setup/certificates_backup/bsf-docker/bsf.crt
+./lib/setup/certificates_backup/nrf-docker/nrf.key
+./lib/setup/certificates_backup/nrf-docker/nrf.crt
+./lib/setup/certificates_backup/nrf-docker/ca.crt
+./lib/setup/certificates_backup/nrf-docker/ca.key
+./lib/setup/certificates_backup/amf-docker/ca.crt
+./lib/setup/certificates_backup/amf-docker/amf.key
+./lib/setup/certificates_backup/amf-docker/amf.crt

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# SMF entrypoint
+
+# Disable checksum offloading if specified
+if [[ "${DISABLE_CHECKSUM_OFFLOADING}" == "TRUE" ]]; then
+    ethtool -K eth0 rx off tx off
+fi
+
+# Check if the first argument is "debug"
+if [ "$1" == "debug" ]; then
+    # Run the AMF binary in gdb for debugging
+    gdb /usr/local/bin/open5gs-udmd \
+        -ex "set substitute-path ../src /usr/local/src" \
+        -ex "break main" \
+        -ex "run -c /etc/open5gs/default/udm.yaml"
+else
+    # Container entrypoint receiving arguments from Docker CMD
+    exec /usr/local/bin/open5gs-udmd "${@}"
+fi
+
+# Keep the container running
+exec /bin/bash
+
+
+
+
+

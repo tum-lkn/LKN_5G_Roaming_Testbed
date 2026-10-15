@@ -1,0 +1,74 @@
+logger:
+  file:
+    path: /var/log/open5gs/amf.log
+
+global:
+  max:
+    ue: 1024
+
+amf:
+
+  default:
+    tls:
+      server:
+        scheme: https
+        private_key: /etc/open5gs/default/tls/amf.key
+        cert: /etc/open5gs/default/tls/amf.crt
+        sslkeylogfile: /var/log/open5gs/tls/amf-server-sslkeylog.log
+      client:
+        scheme: https
+        cacert: /etc/open5gs/default/tls/ca.crt
+        client_sslkeylogfile: /var/log/open5gs/tls/amf-client-sslkeylog.log
+
+  sbi:
+    server:
+      - address: amf.localdomain
+
+    client:
+      nrf:
+        - uri: https://nrf.5gc.mnc071.mcc999.3gppnetwork.org
+
+      ausf:
+        - uri: https://ausf.5gc.mnc071.mcc999.3gppnetwork.org
+
+
+  ngap:
+    server:
+      - address: 192.168.70.185  # NGAP_BIND — 0.0.0.0 when the commercial RAN is enabled (lib/features/set-dongle-mode.sh)
+
+  metrics:
+    server:
+      - address: 192.168.50.185  # METRICS_BIND — 0.0.0.0 when the commercial RAN is enabled
+        port: 9090
+
+  access_control:
+    - plmn_id: { mcc: 999, mnc: 71 }
+    - plmn_id: { mcc: 001, mnc: 01 }
+    - plmn_id: { mcc: 315, mnc: 010 }
+
+  guami:
+    - plmn_id: { mcc: 999, mnc: 71 }
+      amf_id: { region: 2, set: 1 }
+
+  tai:
+    - plmn_id: { mcc: 999, mnc: 71 }
+      tac: 1
+
+  plmn_support:
+    - plmn_id: { mcc: 999, mnc: 71 }
+      s_nssai:
+        - sst: 1
+
+  security:
+    integrity_order: [ NIA1, NIA2 ]
+    ciphering_order: [ NEA0, NEA1, NEA2 ]
+
+  network_name:
+    full: Open5GS
+    short: Next
+
+  amf_name: open5gs-amf0
+
+  time:
+    t3512:
+      value: 540

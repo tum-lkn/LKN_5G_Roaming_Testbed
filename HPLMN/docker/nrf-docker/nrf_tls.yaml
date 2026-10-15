@@ -1,0 +1,36 @@
+logger:
+  file:
+    path: var/log/open5gs/nrf.log
+#  level: info   # fatal|error|warn|info(default)|debug|trace
+
+global:
+  max:
+    ue: 1024  # The number of UE can be increased depending on memory size.
+#    peer: 64
+
+
+nrf:
+
+  default:
+    tls:
+      server:
+        scheme: https
+        private_key: /etc/open5gs/default/tls/nrf.key
+        cert: /etc/open5gs/default/tls/nrf.crt
+        sslkeylogfile: /var/log/open5gs/tls/nrf-server-sslkeylog.log
+      client:
+        scheme: https
+        cacert: /etc/open5gs/default/tls/ca.crt
+        client_sslkeylogfile: /var/log/open5gs/tls/nrf-client-sslkeylog.log
+
+  serving:  # 5G roaming requires PLMN in NRF
+    - plmn_id:
+        mcc: 001
+        mnc: 01
+  sbi:
+    server:
+      - address: nrf.5gc.mnc001.mcc001.3gppnetwork.org
+
+
+
+

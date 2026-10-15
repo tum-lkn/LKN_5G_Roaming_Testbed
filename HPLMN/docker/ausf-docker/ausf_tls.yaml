@@ -1,0 +1,32 @@
+logger:
+  file:
+    path: var/log/open5gs/ausf.log
+#  level: info   # fatal|error|warn|info(default)|debug|trace
+
+global:
+  max:
+    ue: 1024  # The number of UE can be increased depending on memory size.
+#    peer: 64
+
+ausf:
+
+  default:
+    tls:
+      server:
+        scheme: https
+        private_key: /etc/open5gs/default/tls/ausf.key
+        cert: /etc/open5gs/default/tls/ausf.crt
+        sslkeylogfile: /var/log/open5gs/tls/ausf-server-sslkeylog.log
+      client:
+        scheme: https
+        cacert: /etc/open5gs/default/tls/ca.crt
+        client_sslkeylogfile: /var/log/open5gs/tls/ausf-client-sslkeylog.log
+
+
+  sbi:
+    server:
+      - address: ausf.5gc.mnc001.mcc001.3gppnetwork.org
+
+    client:
+      nrf:
+        - uri: https://nrf.5gc.mnc001.mcc001.3gppnetwork.org

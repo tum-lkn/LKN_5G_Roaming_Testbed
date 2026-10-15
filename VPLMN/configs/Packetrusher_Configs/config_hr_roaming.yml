@@ -1,0 +1,49 @@
+# Configuration for Packetrusher Test
+# gNB attached to Visited Network and  UE belongs to Home Network
+gnodeb:
+  controlif:
+    ip: "192.168.70.190"    # gNodeB IP (PacketRusher's static IP address on Docker)
+    port: 9487
+  dataif:
+    ip: "192.168.70.190"    # gNodeB IP (PacketRusher's static IP address on Docker)
+    port: 2152
+  plmnlist:
+    mcc: "999"             # MCC for gNodeB attached to Visited Network
+    mnc: "71"              # MNC for gNodeB attached to Visited Network
+    tac: "000001"          # Tracking Area Code for Visited Network
+    gnbid: "000001"          # gNodeB ID
+  slicesupportlist:
+    sst: "01"              # Slice/Service Type as string
+    # sd: 1                # Optional
+
+ue:
+  msin: "0000001001"       # MSIN part of IMSI
+  key: "8BAF473F2F8FD09487CCCBD7097C6862"   # Subscriber's Key
+  opc: "8E27B6AF0E692E750F32667A3B14605D"   # Subscriber's OPC
+  amf: "8000"
+  sqn: "00000000"
+  dnn: "internet"
+  snssai:
+    sst: 01                 # Slice/Service Type as integer
+    # sd: 1                # Optional
+  routingindicator: "0000"
+  hplmn:
+    mcc: "001" # MCC for UE belongs to Home Network
+    mnc: "01" # MNC for UE belongs to Home Network
+
+  integrity:
+    nia0: false              # Enable NIA0 (null integrity)
+    nia1: true             # Disable NIA1
+    nia2: true             # Disable NIA2
+    nia3: false             # Disable NIA3
+  ciphering:
+    nea0: true              # Enable NEA0 (null ciphering)
+    nea1: true             # Disable NEA1
+    nea2: true             # Disable NEA2
+    nea3: false             # Disable NEA3
+
+
+amfif:
+  - ip: "192.168.70.185"    # AMF IP of the Visited Network where gNB is attached 
+    port: 38412
+

@@ -1,0 +1,32 @@
+logger:
+  file:
+    path: var/log/open5gs/upf.log
+    level: debug   # fatal|error|warn|info(default)|debug|trace
+  console:
+    level: debug
+
+global:
+  max:
+    ue: 1024  # The number of UE can be increased depending on memory size.
+#    peer: 64
+
+upf:
+  pfcp:
+    server:
+      - address: 10.162.149.192 # VPLMN_IP - Update this to your VPLMN PC IP
+    client:
+#      smf:     #  UPF PFCP Client try to associate SMF PFCP Server
+#        - address: 10.162.149.192 # VPLMN_IP
+  gtpu:
+    server:
+      - address: 10.162.149.192 # VPLMN_IP - Update this to your VPLMN PC IP
+        advertise: 10.162.149.192 # VPLMN_IP (advertised N3 address)
+  session:
+    - subnet: 10.45.0.0/16
+      gateway: 10.45.0.1
+    - subnet: 2001:db8:cafe::/48
+      gateway: 2001:db8:cafe::1
+  metrics:
+    server:
+      - address: 10.162.149.192 # VPLMN_IP - Update this to your VPLMN PC IP
+        port: 9090

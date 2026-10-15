@@ -1,0 +1,52 @@
+logger:
+  file:
+    path: var/log/open5gs/smf.log
+#  level: info   # fatal|error|warn|info(default)|debug|trace
+
+global:
+  max:
+    ue: 1024  # The number of UE can be increased depending on memory size.
+#    peer: 64
+
+smf:
+  sbi:
+    server:
+      - address: smf.5gc.mnc001.mcc001.3gppnetwork.org
+    client:
+#      nrf:
+#        - uri: http://127.0.0.10:7777
+      scp:
+        - uri: http://192.168.60.188:7777 # Host Name and related port in Core 1
+  pfcp:
+    server:
+      - address: 192.168.60.193
+    client:
+      upf:
+        - address: 10.162.149.24 # HPLMN_IP - Update this to your HPLMN PC IP
+  gtpc:
+    server:
+      - address: 192.168.60.193
+  gtpu:
+    server:
+      - address: 192.168.60.193
+  metrics:
+    server:
+      - address: 192.168.60.193
+        port: 9090
+  session:
+    - subnet: 10.45.0.0/16
+      gateway: 10.45.0.1
+    - subnet: 2001:db8:cafe::/48
+      gateway: 2001:db8:cafe::1
+  dns:
+    - 8.8.8.8
+    - 8.8.4.4
+    - 2001:4860:4860::8888
+    - 2001:4860:4860::8844
+  mtu: 1400
+#  p-cscf:
+#    - 127.0.0.1
+#    - ::1
+#  ctf:
+#    enabled: auto   # auto(default)|yes|no
+  #freeDiameter: /open5gs/install/etc/freeDiameter/smf.conf

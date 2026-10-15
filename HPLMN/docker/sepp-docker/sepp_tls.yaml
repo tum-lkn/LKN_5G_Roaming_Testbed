@@ -1,0 +1,46 @@
+logger:
+    file:
+      path: /var/log/open5gs/sepp.log
+    level: info   # fatal|error|warn|info(default)|debug|trace
+
+global:
+  max:
+    ue: 1024  # The number of UE can be increased depending on memory size.
+#
+
+
+sepp:
+
+  default:
+    tls:
+      server:
+        scheme: https
+        private_key: /etc/open5gs/default/tls/sepp.key
+        cert: /etc/open5gs/default/tls/sepp.crt
+      client:
+        scheme: https
+        cacert: /etc/open5gs/default/tls/ca.crt
+  sbi:
+    server:
+      - address: sepp.localdomain
+
+
+    client:
+      nrf:
+        - uri: https://nrf.5gc.mnc001.mcc001.3gppnetwork.org
+
+
+  n32:
+    server:
+      - sender: sepp2.localdomain
+        address: 0.0.0.0
+        port: 8080
+        n32f:
+          address: 0.0.0.0
+          port: 8081
+    client:
+      sepp:
+        - receiver: sepp1.localdomain
+          uri: https://sepp1.localdomain:8080  # Core 2
+          n32f:
+            uri: https://sepp1.localdomain:8081 # Core 2
